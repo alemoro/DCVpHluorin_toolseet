@@ -1060,7 +1060,7 @@ function PlaceROIs(){
 	if (isKeyDown("alt")){
 		nROI = roiManager("count");
 		r = 0;
-		bRoi = 0;
+		bROI = 0;
 		while((r < nROI) && (bROI == 0)){
 			roiManager("Select", r);
 			bROI = selectionContains(x, y);
