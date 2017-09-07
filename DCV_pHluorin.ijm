@@ -11,9 +11,7 @@ The toolset will provide different options to match the end user.
 
 Start developing 2015.12.01
 
-Modify           
-	2016.12.08 - Add new function: automatic detection
-	2016.12.09 - Test automatic detection; add filter for detection; modify the "Option" file
+Modify
 	2016.12.13 - Bug correction and plugin checks
 	2017.01.08 - Update detection function
 	2017.01.17 - Cleanup code and extract function
@@ -23,10 +21,12 @@ Modify
 	2017.07.11 - Add background correction
 	2017.07.13 - Several bugs fixed and increased speed
 	2017.07.14 - version 1.0 released
+	2017.08.10 - improved "Export to SynD" for better pool size aproximation
+	2017.09.07 - update Documuntation link
 */
 
 var majVer = 1;
-var minVer = 0;
+var minVer = 01;
 var about = "Developed by Alessandro Moro<br>"
 			+ "<i>Department of Functional Genomics</i> (FGA)<br>"
 			+ "<i>Centre of neuroscience and cognitive research</i> (CNCR)<br>"
@@ -383,7 +383,7 @@ macro "Help... Action Tool - C000D84Cb9fD25De7CaaaD14D2dDa0DafDecDfaCedfD49D4aD4
 	 + "<h2>Version " + majVer + "." + minVer + "</h2><br>"
 	 + about + "<br>"
 	 + "The documentation could be found "
-	 + "<a href=\"https://github.com/alemoro/FGA_LCI_tools/blob/master/DCV_pHluorin%20documentation.pdf\">here.</a><br>"
+	 + "<a href=\"https://github.com/alemoro/DCVpHluorin_toolseet/blob/master/DCV_pHluorin%20documentation.pdf\">here.</a><br>"
 	 + "<a href=\"http://www.johanneshjorth.se/SynD/SynD.html\">SynD</a><br>"
 	 + "<a href=\"https://dreamdealer.net/redmine/projects\">Fusion Analysis 2</a><br>"
 	 + "<a href=\"http://bigwww.epfl.ch/thevenaz/stackreg/\">StackReg</a><br>"
@@ -518,15 +518,15 @@ function refineRoi(bAll){
 function exportToSynD(){
 	Dialog.create("Export to SynD");
 	Dialog.addChoice("Marker", newArray("pHluorin", "mCherry"), "pHluorin");
+	Dialog.addNumber("Baseline frames (matching FA2)", 5);
 	Dialog.addNumber("Start frame", 161);
 	Dialog.addNumber("End frame", 166);
-	Dialog.addChoice("Projection", newArray("Max Intensity", "Average Intensity", "Standard Deviation"));
 	Dialog.addCheckbox("Process folder", 1);
 	Dialog.show;
 	marker = Dialog.getChoice();
+	baseFrame = Dialog.getNumber();
 	startF = Dialog.getNumber();
 	endF = Dialog.getNumber();
-	Zproj = Dialog.getChoice();
 	bFolder = Dialog.getCheckbox();
 
 	if (bFolder == 1){
@@ -547,12 +547,13 @@ function exportToSynD(){
 				if ((slices < 2) && (frames < 2)){
 					close(title);
 				}
-				saveForSynD(title, marker, startF, endF, Zproj);
+				saveForSynD(title, marker, baseFrame, startF, endF);
 				while (nImages > 0){
 					close();
 				}
 			}
 		}
+		showStatus("Exporting to SynD done!");
 		setBatchMode(false);
 	} else {
 		wd = getDirectory("Image");
@@ -563,27 +564,33 @@ function exportToSynD(){
 		title = getTitle();
 		selectWindow(title);
 		sTitle = substring(title, 0, lengthOf(title) - 4);
-		saveForSynD(title, marker, startF, endF, Zproj);
+		saveForSynD(title, marker, baseFrame, startF, endF);
 	}
 }
 
 // Function to exporting an image to SynD to calculate the total pool of vesicles
-function saveForSynD(title, marker, startF, endF, Zproj){
+function saveForSynD(title, marker, baseFrame, startF, endF){
 	sTitle = substring(title, 0, lengthOf(title) - 4);
 	if (marker == "pHluorin"){
 		// get an overview of the ammonia response and delete the first frame to have a subtraction of the initial baseline
-		run("Duplicate...", " ");
+		run("Duplicate...", "duplicate range=1-" + baseFrame);
+		rename("firstFrame");
+		run("Z Project...", "projection=[Average Intensity]");
+		selectWindow("firstFrame");
+		close();
+		selectWindow("AVG_firstFrame");
 		rename("firstFrame");
 		selectWindow(title);
 		run("Duplicate...", "duplicate range=" + startF + "-" + endF);
-		run("Z Project...", "projection=[" + Zproj + "]");
+		rename("Ammonium");
+		imageCalculator("Divide create 32-bit stack", "Ammonium","firstFrame");
 		rename("Average");
-		close(sTitle + "-2.tif");
-		imageCalculator("Subtract create", "Average","firstFrame");
-			rename("Ammonium");
-		close("Average");
-		close("firstFrame");
 		selectWindow("Ammonium");
+		close();
+		selectWindow("firstFrame");
+		close();
+		selectWindow("Average");
+		run("Z Project...", "projection=[Max Intensity]");
 	} else {
 		// in the case of a not pH sensitive fluorophore use an average of the first frames
 		run("Duplicate...", "duplicate range=" + startF + "-" + endF);
