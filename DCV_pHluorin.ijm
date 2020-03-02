@@ -13,17 +13,18 @@ Start developing 2015.12.01
 
 Modify
 	20.03.02 - Released with bug fixed for placing the first ROI
+	20.03.02 - Bug fixed for folder location in Mac
 */
 
 var majVer = 2;
-var minVer = 00;
+var minVer = 01;
 var about = "Developed by Alessandro Moro<br>"
 			+ "<i>Department of Functional Genomics</i> (FGA)<br>"
 			+ "<i>Centre of neuroscience and cognitive research</i> (CNCR)<br>"
 			+ "<i>Vrij Universiteit</i> (VU) Amsterdam.<br>"
 			+ "<i>email: a.moro@vu.nl al.moro@outlook.com</i><br><br><br>";
 
-var DCV_dir = getDirectory("imagej") + "macros\\toolsets\\DCVpHluorin";
+var DCV_dir = getDirectory("imagej") + "macros//toolsets//DCVpHluorin";
 // even before starting check if it's the first time it's run
 function firstCheck() {
 	bFirst = call("ij.Prefs.get", "DCVpHluorin.bFirst", true);
