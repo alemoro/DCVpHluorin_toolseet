@@ -1,15 +1,19 @@
-// DCV-pHluorin Analyzer - Groovy plugins to check ROI and add/remove events
+// @ImagePlus img
+// @OpService ops
+// @UIService ui
+// @RoiManager rm
 
 /*
+DCV-pHluorin Analyzer - Groovy plugins to check ROI and add/remove events
 This groovy plugin allow the user to evaluate the starting point of the events per ROI, adding and removing them as well as removing the ROI if no real events are present
-
 
 Modify
 	20.02.28 - Add new event will not continue to the next ROI
+	20.03.02 - Bug fixed that blocked the program to run properly
 
 Version
 	Base - DCV_pHluorin v2.0
-	Function - DCVpHluorin_CheckROIs v1.0
+	Function - DCVpHluorin_CheckROIs v1.0a
 
 Developed by Alessandro Moro
 Department of Functional Genomics (FGA)
@@ -17,11 +21,6 @@ Centre of neuroscience and cognitive research (CNCR)
 Vrij Universiteit (VU) Amsterdam.
 email: a.moro@vu.nl; al.moro@outlook.com
 */
-
-// @ImagePlus img
-// @OpService ops
-// @UIService ui
-// @RoiManager rm
 
 import ij.IJ
 import ij.process.ImageStatistics
