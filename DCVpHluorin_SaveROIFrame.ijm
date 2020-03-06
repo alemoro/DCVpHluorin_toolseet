@@ -98,17 +98,19 @@ if (matches(whichOption, "manager")) {
 			// get the actual numbers
 			nColocalization = 0;
 			multipleSite = 0;
+			allSite = 0;
 			for (r=0; r<nRoi; r++) {
-				nColocalization = nColocalization + colocalizationRoi[r];
+				allSite = allSite + colocalizationRoi[r];
 				if (colocalizationRoi[r] > 1) {
 					multipleSite++; // increase the size of ROI with multiple events by one (site)
+					nColocalization = nColocalization + colocalizationRoi[r];
 				}
 			}
 			// output the data in a table
 			setResult("CellID", row, imgTitle);
 			setResult("Number ROI", row, nRoi);
 			setResult("Number Events", row, nEvents);
-			setResult("Number Colocalization", row, nColocalization);
+			setResult("Number Colocalization", row, nColocalization/allSite*100);
 			setResult("Sites multiple events", row, multipleSite/nRoi*100);
 			row++;
 			roiManager("reset");
