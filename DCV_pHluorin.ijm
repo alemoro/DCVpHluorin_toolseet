@@ -14,10 +14,11 @@ Start developing 2015.12.01
 Modify
 	20.03.02 - Released with bug fixed for placing the first ROI
 	20.03.02 - Bug fixed for folder location in Mac
+	20.03.06 - Add function to calculate the number of events per site
 */
 
 var majVer = 2;
-var minVer = 01;
+var minVer = 02;
 var about = "Developed by Alessandro Moro<br>"
 			+ "<i>Department of Functional Genomics</i> (FGA)<br>"
 			+ "<i>Centre of neuroscience and cognitive research</i> (CNCR)<br>"
@@ -159,14 +160,16 @@ macro "ROIs Interacion Menu Tool - C5d5T1d13 T9d13 R9077  C555T1d13 T9d13 D2aD3a
 }
 
 // ROIs frames -> read all the RoiSet.zip file in the specified folder reporting the name and frame number
-var sCmds3 = newMenu("ROIs Frames Reader Menu Tool", newArray("From ROI Manager", "From Folder"));
+var sCmds3 = newMenu("ROIs Frames Reader Menu Tool", newArray("From ROI Manager", "From Folder", "Event Co-localization"));
 macro "ROIs Frames Reader Menu Tool - C5d5T1d13 T9d13 R9077R9977 C555T1d13 T9d13 L00f0L03f3L06f6L09f9L0cfcL0fbf"{
 	cmd3 = getArgument();
 	firstCheck();
 	if (cmd3 == "From ROI Manager") {
 		runMacro(DCV_dir+"//DCVpHluorin_SaveROIFrame.ijm", "manager");
-	} else {
+	} else if (cmd3 == "From Folder") {
 		runMacro(DCV_dir+"//DCVpHluorin_SaveROIFrame.ijm", "folder");
+	} else {
+		runMacro(DCV_dir+"//DCVpHluorin_SaveROIFrame.ijm", "colocalization");
 	}
 }
 
