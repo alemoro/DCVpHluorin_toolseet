@@ -10,10 +10,13 @@ This groovy plugin allow the user to evaluate the starting point of the events p
 Modify
 	20.02.28 - Add new event will not continue to the next ROI
 	20.03.02 - Bug fixed that blocked the program to run properly
+	20.03.03 - Bug fixed for starting of check at 1 instead of zero
+	20.03.11 - Bug fixed for zooming into ROI
+	20.06.11 - Big fixed for Roi without events
 
 Version
 	Base - DCV_pHluorin v2.0
-	Function - DCVpHluorin_CheckROIs v1.0a
+	Function - DCVpHluorin_CheckROIs v1.0c
 
 Developed by Alessandro Moro
 Department of Functional Genomics (FGA)
@@ -23,6 +26,7 @@ email: a.moro@vu.nl; al.moro@outlook.com
 */
 
 import ij.IJ
+import ij.gui.Roi
 import ij.process.ImageStatistics
 import net.imglib2.type.numeric.real.DoubleType
 import net.imglib2.img.array.ArrayImgFactory
@@ -47,25 +51,25 @@ nRoi = rm.getCount()
 roiIdx = rm.getIndexes()
 // Before start ask if starting from the start or from a specific ROI
 gd = new GenericDialog("ROI check startup")
-gd.addNumericField("Start from ROI", roiIdx[0], 0, 1, "")
+gd.addNumericField("Start from ROI", roiIdx[0]+1, 0, 1, "")
 gd.addCheckbox("Zoom to event?", false)
 gd.showDialog()
 int r = gd.getNextNumber() - 1
 bZoom = gd.getCheckboxes()
 while (r < nRoi) {
 	// get the ROI
-	rm.select(img, r)
+	Roi roi = rm.select(img, r)
 	String roiName = rm.getName(r)
 	events = roiName.split("-")
 	roiID = events[0]
-	events = events[1..-1]
+	if (events.length > 1) {
+		events = events[1..-1]
+	} else {
+		events = 0;
+	}
 	// zoom in to selection
-	if (bZoom.state == true) {
-		println(bZoom.state)
-		IJ.run("To Selection", "")
-		for (z=0; z<5; z++) {
-			IJ.run("Out [-]", "")
-		}
+	if (bZoom.state[0] == true) {
+		IJ.run("Set... ", "zoom=600 x=" + (rois[r].x + rois[r].width / 2) + " y=" + (rois[r].y + rois[r].height / 2))
 	}
 	// get the value of the starting frame
 	eventMean = []
