@@ -15,10 +15,11 @@ Modify
 	20.03.02 - Released with bug fixed for placing the first ROI
 	20.03.02 - Bug fixed for folder location in Mac
 	20.03.06 - Add function to calculate the number of events per site
+	20.06.06 - Add function to calculate fusion parameter and distance from synapses and other fusion sites
 */
 
 var majVer = 2;
-var minVer = 02;
+var minVer = 03;
 var about = "Developed by Alessandro Moro<br>"
 			+ "<i>Department of Functional Genomics</i> (FGA)<br>"
 			+ "<i>Centre of neuroscience and cognitive research</i> (CNCR)<br>"
