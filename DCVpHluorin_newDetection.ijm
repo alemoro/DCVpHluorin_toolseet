@@ -6,10 +6,11 @@ This macro is used to create options for the DCV-pHluorin toolset
 Modify
 	2018.12.21 - Created
 	2020.02.10 - Update detection to use outliers
+	2020.03.09 - Start adding a function to determine if an event is slow or fast rising + bug fixed to delete the ROI if no event is detected
 
 Version
 	Base - DCV_pHluorin v2.0
-	Function - DCVpHluorin_newDetection v1.0
+	Function - DCVpHluorin_newDetection v1.0a
 
 Developed by Alessandro Moro
 Department of Functional Genomics (FGA)
@@ -44,24 +45,25 @@ var stimL = call("ij.Prefs.get", "DCVpHluorin.stimL", true);
 // Semi automatic detection
 var stimS = newArray(10);
 // Here you can add a shortcut for the start of the stimulation
-/*
+
 if (nStim == 5) {
 	stimS[0] = 15; stimS[1] = 55; stimS[2] = 95; stimS[3] = 135; stimS[4] = 205;
 } else if (nStim == 2) {
 	stimS[0] = 55; stimS[1] = 139;
 } else if (nStim == 3) {
-	stimS[0] = 15; stimS[1] = 75; stimS[2] = 135;
+	stimS[0] = 50; stimS[1] = 65; stimS[2] = 80; // 61 - 109
 } else {
 	for (s = 0; s < nStim; s++) {
 		stimS[s] = getNumber("Stimulation "+ (1+s) +" start", 50);
 	}
 }
-*/
 
+/*
 // Or use this line to enter the start of the stimulation manually each time
 for (s = 0; s < nStim; s++) {
 	stimS[s] = getNumber("Stimulation "+ (1+s) +" start", 50);
 }
+*/
 
 if (bRemove) {
 	orImg = getImageID();
@@ -243,24 +245,30 @@ function detectEvents() {
 		}
 		// Save the Roi only if there is an event
 		bKeep = false;
+		name = IJ.pad(l, 4);
 		if (nEvents>0) {
-			name = IJ.pad(l, 4);
 			for (i = 0; i < nEvents; i++) {
 				// Check if the actually signal is higher than its baseline
 				if ((evStart[i]) < (parseInt(nh4Start) - 5)) {
 					bStd = (rollDiff[evStart[i]+3] > 0);// || (rollDiff[evStart[i]+4] > 0) || (rollDiff[evStart[i]+2] > 0);
-					if (bStd) {
+					// add a new filter for slow events
+					bFast = isFast(vesicle, evStart[i]+3);
+					//bFast = true;
+					if (bStd && bFast) {
 						bKeep = true;
 						if (i == 0) {
-							name = name+"-"+evStart[i]+3;
+							name = name+"-"+evStart[i]+2;
 						} else {
 							if ((evStart[i]-evStart[i-1])>1) {
-								name = name+"-"+evStart[i]+3;
+								name = name+"-"+evStart[i]+2;
 							}
 						}
 					}
 				}
 			}
+		}
+		if (!(indexOf(name, "-") > 0)) {
+			bKeep = false;
 		}
 		if (bKeep) {
 			roiManager("rename", name);
@@ -382,4 +390,24 @@ function calculatePercentile(testArray) {
 		percentiles[2] = (testArray[q75-1] + testArray[q75]) / 2;
 	}
 	return percentiles;
+}
+
+function isFast(trace, eventStart) {
+	tempTrace = Array.slice(trace,eventStart-5,eventStart+5);
+	// calculate the groth factor
+	workTrace = newArray(10);
+	for (i = 1; i < tempTrace.length; i++) {
+		workTrace[i-1] = tempTrace[i] / tempTrace[i-1];
+	}
+	growthTrace = Array.slice(workTrace,0,9);
+	Array.sort(growthTrace);
+	growthQs = calculatePercentile(growthTrace);
+	growthIQR = growthQs[2] - growthQs[0];
+	growthThr = growthQs[2] + 1.5 * growthIQR;
+	if ((workTrace[3] >= growthThr) || (workTrace[4] >= growthThr)) {
+		bFast = true;
+	} else {
+		bFast = false;
+	}
+	return bFast;
 }
