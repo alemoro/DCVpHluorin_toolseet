@@ -28,7 +28,7 @@ if (matches(whichOption, "manager")) {
 	if (nImages != 1) {
 		exit("Error: Image not found.\nThe image to analyze should be open.");
 	} else {
-		runMacro(DCV_dir+"//DCVpHluorin_SaveROIs.ijm", "saveROI");
+		//runMacro(DCV_dir+"//DCVpHluorin_SaveROIs.ijm", "saveROI");
 		roiManager("reset");
 		calculateFusionParameters(false);
 	}

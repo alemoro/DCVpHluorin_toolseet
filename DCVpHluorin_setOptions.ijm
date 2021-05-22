@@ -142,9 +142,9 @@ function setOptions() {
 	Dialog.addNumber("Stimulation time (in frames)", stimL);
 	Dialog.addSlider("Smoothing radius (0.6 default)", 0.3, 1.5, sigma);
 	Dialog.addNumber("SNR (0 for automatic evaluation)", snr);
-	Dialog.addNumber("Detection threshold (n*StDev image)", detSigma);
+	Dialog.addNumber("Detection threshold (n*StDev)", detSigma);
 	Dialog.addMessage("ROI parameters");
-	Dialog.addNumber("Cleaning threshold (n*StDev trace)", cleSigma);
+	Dialog.addNumber("Signal influence (0-1)", cleSigma);
 	Dialog.addNumber("ROI size", ROI_size);
 	Dialog.addNumber("Maximum pxs overlap between ROIs", roiOver);
 	Dialog.addRadioButtonGroup("ROI shape", newArray("Rectangle", "Oval"), 1, 2, ROI_shape);

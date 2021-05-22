@@ -68,8 +68,10 @@ if (batchAnalysis) {
 	print(titleDlg, "\\Close");
 } else {
 	setBatchMode("hide");
+	imgID = getImageID();
 	getNH4();
 	if (roiManager("count") > 0) {
+		selectImage(imgID);
 		runMacro(DCV_dir+"//DCVpHluorin_SaveROIs.ijm", "saveNH4");
 	}
 	setBatchMode("Exit and display");
@@ -120,7 +122,14 @@ function getNH4() {
 	// return to the stdImg and prepare it for spot detection
 	selectImage(stdImg);
 	run("8-bit");
-	run("Unsharp Mask...", "radius=1 mask=0.90");
+	IJversion = IJ.getFullVersion;
+	versionNumber = substring(IJversion,2,lengthOf(IJversion)-2);
+	versionNumber = parseInt(versionNumber, 36);
+	if (versionNumber >= parseInt("53f", 36)) {
+		run("Top Hat...", "radius=2");
+	} else {
+		run("Unsharp Mask...", "radius=1 mask=0.90");
+	}
 	if (bInclude) {
 		setBatchMode("Exit and display");
 		waitForUser("Evaluate SNR");

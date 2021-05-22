@@ -53,3 +53,4 @@ while(r<nRoi){
 	r++;
 }
 setBatchMode("Exit and display");
+run("Remove Overlay");

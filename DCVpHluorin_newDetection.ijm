@@ -7,6 +7,7 @@ Modify
 	2018.12.21 - Created
 	2020.02.10 - Update detection to use outliers
 	2020.03.09 - Start adding a function to determine if an event is slow or fast rising + bug fixed to delete the ROI if no event is detected
+	2020.12.19 - Add a top hat filter instead of the unsharp mask
 
 Version
 	Base - DCV_pHluorin v2.0
@@ -43,7 +44,7 @@ var nStim = call("ij.Prefs.get", "DCVpHluorin.nStim", true);
 var stimL = call("ij.Prefs.get", "DCVpHluorin.stimL", true);
 
 // Semi automatic detection
-var stimS = newArray(10);
+var stimS = newArray(100);
 // Here you can add a shortcut for the start of the stimulation
 
 if (nStim == 5) {
@@ -52,6 +53,13 @@ if (nStim == 5) {
 	stimS[0] = 55; stimS[1] = 139;
 } else if (nStim == 3) {
 	stimS[0] = 50; stimS[1] = 65; stimS[2] = 80; // 61 - 109
+} else if (nStim == 16) {
+	for (s=0; s<8; s++) {
+		stimS[s] = 60 + 3*s;
+	}
+	for (s=8; s<16; s++) {
+		stimS[s] = 143 + 3*(s-8);
+	}
 } else {
 	for (s = 0; s < nStim; s++) {
 		stimS[s] = getNumber("Stimulation "+ (1+s) +" start", 50);
@@ -109,6 +117,7 @@ if (batchAnalysis) {
 function detectEvents() {
 	orImg = getImageID();
 	// get a duplicate image and work with this
+	run("Select None");
 	run("Duplicate...", "duplicate");
 	dupID = getImageID();
 	if (matches(normMethods, "Baseline subtraction")) {
@@ -123,13 +132,30 @@ function detectEvents() {
 		run("Z Project...", "start="+stimS[s]+" stop="+stimE+" projection=[Standard Deviation]");
 		stdImg = getImageID();
 		if (matches(normMethods, "B&W Opening")) {
-			run("Maximum...", "radius="+sigma);
-			run("Minimum...", "radius="+sigma);
-			run("Gaussian Blur...", "sigma="+sigma);
-			run("Sharpen");
+			selectImage(dupID);
+			run("Z Project...", "start="+stimS[s]+" stop="+stimE+" projection=[Max Intensity]");
+			maxID = getImageID();
+			selectImage(dupID);
+			run("Z Project...", "start="+stimS[s]+" stop="+stimE+" projection=[Average Intensity]");
+			avgID = getImageID();
+			imageCalculator("Multiply", stdImg, maxID);
+			imageCalculator("Divide", stdImg, avgID);
+			selectImage(maxID); close();
+			selectImage(avgID); close();
+			//run("Maximum...", "radius="+sigma);
+			//run("Minimum...", "radius="+sigma);
+			//run("Gaussian Blur...", "sigma="+sigma);
+			//run("Sharpen");
 		}
 		run("8-bit");
-		run("Unsharp Mask...", "radius="+ROI_size+" mask=0.7");
+		IJversion = IJ.getFullVersion;
+		versionNumber = substring(IJversion,2,lengthOf(IJversion)-2);
+		versionNumber = parseInt(versionNumber, 36);
+		if (versionNumber >= parseInt("53f", 36)) {
+			run("Top Hat...", "radius="+ROI_size);
+		} else {
+			run("Unsharp Mask...", "radius="+ROI_size+" mask=0.7");
+		}
 		if (bInclude) {
 			setBatchMode("Exit and display");
 			waitForUser("Evaluate SNR");
@@ -184,6 +210,7 @@ function detectEvents() {
 		close();
 	}
 	// detect the fusion event in the trace
+	/*
 	while(l<nRoi){
 		showProgress(l+1,nRoi);
 		showStatus("Detecting Frame " + l+1 +"/" + nRoi);
@@ -234,7 +261,7 @@ function detectEvents() {
 		vesQ = calculatePercentile(dSort);
 		IQR = vesQ[2] - vesQ[0];
 		hThr = vesQ[2] + cleSigma * IQR;
-		// get values that are abothe the threshold
+		// get values that are above the the threshold
 		nEvents = 0;
 		evStart = newArray(dVes.length);
 		for (i=0; i<dVes.length; i++) {
@@ -250,10 +277,10 @@ function detectEvents() {
 			for (i = 0; i < nEvents; i++) {
 				// Check if the actually signal is higher than its baseline
 				if ((evStart[i]) < (parseInt(nh4Start) - 5)) {
-					bStd = (rollDiff[evStart[i]+3] > 0);// || (rollDiff[evStart[i]+4] > 0) || (rollDiff[evStart[i]+2] > 0);
+					bStd = (rollDiff[evStart[i]+3] > 0) || (rollDiff[evStart[i]+4] > 0) || (rollDiff[evStart[i]+2] > 0);
 					// add a new filter for slow events
-					bFast = isFast(vesicle, evStart[i]+3);
-					//bFast = true;
+					//bFast = isFast(vesicle, evStart[i]+3);
+					bFast = true;
 					if (bStd && bFast) {
 						bKeep = true;
 						if (i == 0) {
@@ -277,57 +304,9 @@ function detectEvents() {
 			roiManager("delete");
 			nRoi--;
 		}
-		/*
-		if (rollDiff[bRoll] > 0) {
-			if (nEvents>0) {
-				name = IJ.pad(l, 4);
-				for (i = 0; i < nEvents; i++) {
-					if (i == 0) {
-						name = name+"-"+evStart[i]+2;
-					} else {
-						if ((evStart[i]-evStart[i-1])>1) {
-							name = name+"-"+evStart[i]+2;
-						}
-					}
-				}
-				roiManager("rename", name);
-				l++;
-			} else {
-				roiManager("delete");
-				nRoi--;
-			}
-		} else {
-			roiManager("delete");
-			nRoi--;
-		}
-		
-		// see if something goes above the threshold before the NH4
-		bThr = false;
-		for (i = startFrame; i < dVes.length; i++) {
-			if (dVes[i] > hThr) {
-				bThr = true;
-				i = nh4Start;
-			}
-		}
-		// Check if there is at least one point that meet the rolling threshold
-		if (rollDiff[bRoll] > 0) {
-			if ((bRoll >= BGframes + 1) && (bRoll <= nh4Start - 5)) {
-				bVes = true;
-			}
-			if (bVes && bThr) {
-				setSlice(bRoll);
-				roiManager("update");
-				l++;
-			} else {
-				roiManager("delete");
-			}
-		} else {
-			roiManager("delete");
-		}
-		nRoi = roiManager("count");
-		*/
 	}	
 	runMacro(DCV_dir+"//DCVpHluorin_RoiManagerCleaner.ijm");
+	*/
 	run("Remove Overlay");
 	if (ROI_size == 2) {
 		nRoi = roiManager("Count");
